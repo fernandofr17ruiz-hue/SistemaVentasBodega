@@ -146,7 +146,7 @@ function actualizarPanelDerecho(item) {
 function limpiarPanelDerecho() {
     itemSeleccionadoCaja = null;
     if(document.getElementById('sV')) document.getElementById('sV').innerText = "0";
-    if(document.getElementById('imgV')) document.getElementById('imgV').src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300';
+    if(document.getElementById('imgV')) document.getElementById('imgV').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect fill='%23f0f0f0' width='400' height='300'/%3E%3Ctext x='50%25' y='40%25' font-size='24' font-family='Arial' text-anchor='middle' fill='%23999' dominant-baseline='middle'%3E📦 Seleccione un Producto%3C/text%3E%3Ctext x='50%25' y='60%25' font-size='14' font-family='Arial' text-anchor='middle' fill='%23ccc' dominant-baseline='middle'%3ELa imagen aparecerá aquí%3C/text%3E%3C/svg%3E";
 }
 
 function calcularVistaPrevia() {
@@ -453,6 +453,53 @@ async function eliminarUsuario(id) {
     if(confirm("¿Estás seguro de eliminar el acceso a este empleado?")) { 
         await fetch(`${API_URL}/usuarios/${id}`, { method: 'DELETE' }); 
         cargarUsuarios(); 
+    }
+}
+
+// ==========================================
+// MÓDULO DE ADMINISTRACIÓN - CAMBIAR CREDENCIALES
+// ==========================================
+function procesarCambioCredenciales() {
+    const tipoUsuario = document.getElementById('tipoUsuario').value;
+    const nuevaContrasena = document.getElementById('nuevaContrasena').value;
+    const confirmarContrasena = document.getElementById('confirmarContrasena').value;
+    
+    const titulo = tipoUsuario === 'admin' ? 'Administrador' : 'Cajero';
+    
+    if (nuevaContrasena.trim().length < 3) {
+        alert('La contraseña debe tener al menos 3 caracteres.');
+        return;
+    }
+    
+    if (nuevaContrasena !== confirmarContrasena) {
+        alert('Las contraseñas no coinciden.');
+        return;
+    }
+    
+    actualizarCredencialesEnBD(tipoUsuario, nuevaContrasena);
+}
+
+async function actualizarCredencialesEnBD(usuario, nuevaContrasena) {
+    try {
+        const response = await fetch(`${API_URL}/usuarios/${usuario}/cambiar-contrasena`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nueva_contrasena: nuevaContrasena })
+        });
+        
+        if (response.ok) {
+            alert(`✅ Contraseña de ${usuario.toUpperCase()} actualizada correctamente.`);
+            document.getElementById('nuevaContrasena').value = '';
+            document.getElementById('confirmarContrasena').value = '';
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCredenciales'));
+            if (modal) modal.hide();
+        } else {
+            const error = await response.json();
+            alert(`❌ Error: ${error.error || 'No se pudo actualizar la contraseña.'}`);
+        }
+    } catch (error) {
+        alert('Error de conexión al actualizar la contraseña.');
+        console.error(error);
     }
 }
 
