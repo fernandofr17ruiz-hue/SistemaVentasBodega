@@ -572,16 +572,35 @@ function abrirModal(idModalDestino) {
     }, 400); 
 }
 
-function simularLoginFacebook() {
+async function simularLoginFacebook() {
     const btnText = document.getElementById('btn-fb-text');
-    btnText.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Conectando...';
-    setTimeout(() => {
-        btnText.innerHTML = 'Validando permisos...';
-        setTimeout(() => {
-            alert("Inicio de sesión exitoso con Facebook.");
-            window.location.href = 'tienda.html'; 
-        }, 2000);
-    }, 1500);
+    if (btnText) btnText.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Conectando...';
+
+    try {
+        const { response, data } = await postJSON('/autenticacion/registro/facebook', {
+            nombre_completo: 'Cliente Facebook',
+            correo: 'cliente_facebook@bodegapro.local',
+            token_facebook: 'simulado'
+        });
+
+        if (btnText) btnText.innerHTML = 'Continúa con Facebook';
+        if (!response.ok) {
+            return alert(`Error: ${data?.error || 'No se pudo iniciar sesión con Facebook.'}`);
+        }
+
+        if (!data.cliente) {
+            return alert('No se pudo obtener la información de cliente desde Facebook.');
+        }
+
+        localStorage.setItem('usuarioId', data.cliente.id);
+        localStorage.setItem('nombreUsuario', data.cliente.nombre_completo || data.cliente.correo || 'Cliente Facebook');
+        localStorage.setItem('rol', 'cliente');
+        window.location.href = 'tienda.html';
+    } catch (error) {
+        console.error(error);
+        if (btnText) btnText.innerHTML = 'Continúa con Facebook';
+        alert('Error de conexión con el servidor.');
+    }
 }
 
 function simularRecuperacion() {
@@ -715,10 +734,17 @@ async function login() {
     try {
         const { response, data } = await postJSON('/usuarios/login', { username, password });
         if (response.ok && data.usuario) {
+            const rolUsuario = (data.usuario.rol || 'empleado').toLowerCase();
             localStorage.setItem('usuarioId', data.usuario.id);
             localStorage.setItem('nombreUsuario', data.usuario.nombre || data.usuario.nombre_completo || data.usuario.username);
-            localStorage.setItem('rol', data.usuario.rol || 'empleado');
-            window.location.href = 'sistema.html';
+            localStorage.setItem('rol', rolUsuario);
+
+            if (rolUsuario === 'administrador') {
+                window.location.href = 'inventario.html';
+            } else {
+                window.location.href = 'sistema.html';
+            }
+            return;
         } else {
             alert(data?.error || 'Credenciales inválidas');
         }

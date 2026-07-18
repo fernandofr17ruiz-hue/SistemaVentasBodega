@@ -85,6 +85,15 @@ const ClientesModel = {
         return result.affectedRows > 0;
     },
 
+    // Marcar email verificado para clientes creados vía Facebook
+    marcarEmailVerificado: async (clienteId) => {
+        const [result] = await db.execute(
+            'UPDATE clientes SET email_verificado = TRUE WHERE id = ?',
+            [clienteId]
+        );
+        return result.affectedRows > 0;
+    },
+
     // Obtener todos los clientes (para estadísticas)
     obtenerTodos: async () => {
         const [rows] = await db.execute(

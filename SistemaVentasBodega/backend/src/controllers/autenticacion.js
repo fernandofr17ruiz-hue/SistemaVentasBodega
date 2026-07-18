@@ -99,13 +99,14 @@ const AutenticacionController = {
                 const clienteId = await ClientesModel.crear({
                     nombre_completo,
                     correo,
-                    tipo_registro: 'facebook'
+                    tipo_registro: 'facebook',
+                    contrasena: null
                 });
+                await ClientesModel.marcarEmailVerificado(clienteId);
                 cliente = await ClientesModel.buscarPorId(clienteId);
+            } else {
+                await ClientesModel.marcarEmailVerificado(cliente.id);
             }
-
-            // Marcar email como verificado (simulando que Facebook lo verificó)
-            await ClientesModel.verificarCodigo(cliente.id, '123456', 'email'); // Código dummy
 
             await ClientesModel.registrarUltimoAcceso(cliente.id);
 
